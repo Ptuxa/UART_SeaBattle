@@ -29,21 +29,9 @@ namespace UART_SeaBattle
 
         private ShipCoordinates[] shipsCoordinates = new ShipCoordinates[]
         {
-            new ShipCoordinates
-            {
-                FirstSection = new Point(1, 1),
-                LastSection = new Point(3, 1)
-            },
-            new ShipCoordinates
-            {
-                FirstSection = new Point(5, 3),
-                LastSection = new Point(8, 3)
-            },
-            new ShipCoordinates
-            {
-                FirstSection = new Point(0, 6),
-                LastSection = new Point(0, 6)
-            }
+            new ShipCoordinates { FirstSection = new Point(1, 1), LastSection = new Point(3, 1) },
+            new ShipCoordinates { FirstSection = new Point(5, 3), LastSection = new Point(8, 3) },
+            new ShipCoordinates { FirstSection = new Point(0, 6), LastSection = new Point(0, 6) }
         };
 
         struct ShipPosition
@@ -62,14 +50,12 @@ namespace UART_SeaBattle
             }
         }
 
-        private ShipPosition[] shipsPositions;
-        //private float currentAngle = 0f;
         private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         private PointF projectilePosition;
         private float projectileAngle = 0;
         private bool projectileInFlight = false;
         private float currentAngle = 90f; // Начальная ориентация вверх
-
+        private List<ShipSection[]> shipsSections; // Используем список секций
 
         public FormBattleField()
         {
@@ -83,102 +69,104 @@ namespace UART_SeaBattle
             timer.Interval = 30; // Таймер для движения снаряда
             timer.Tick += UpdateProjectilePosition;
 
-            shipsPositions = shipsCoordinates.Select(c => CalculateShipPosition(c)).ToArray();
-            this.ClientSize = new Size(TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X, TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200);
+            shipsSections = InitializeShips(); // Инициализируем корабли и их секции
+
+            this.ClientSize = new Size(TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
+                                       TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200);
         }
 
-        private void ShootProjectile()
+        private List<ShipSection[]> InitializeShips()
         {
-            // Перевод угла в радианы
-            float angleRad = (180 - currentAngle) * (float)Math.PI / 180;
+            var sections = new List<ShipSection[]>();
 
-            // Координаты центра пушки с учетом смещения
-            float centerX = GUN_LOCATION_X + originalImage.Width / 2;
-            float centerY = GUN_LOCATION_Y + originalImage.Height / 2;
-
-            // Длина дула (от центра пушки до конца, с учетом смещения дула)
-            float barrelLength = originalImage.Height / 2;
-
-            // Вычисление координат конца дула пушки
-            float gunTipX = centerX + (float)Math.Cos(angleRad) * barrelLength; // Косинус для горизонтальной оси (X)
-            float gunTipY = centerY - (float)Math.Sin(angleRad) * barrelLength; // Синус для вертикальной оси (Y)
-
-            // Угол и начальная позиция снаряда
-            projectileAngle = 180 - currentAngle;
-            projectilePosition = new PointF(gunTipX, gunTipY);
-            projectileInFlight = true;
-            timer.Start(); // Запуск таймера для движения снаряда
-        }
-
-        private void DrawGun(Graphics g)
-        {
-            // Сохраняем текущую трансформацию
-            Matrix oldTransform = g.Transform;
-
-            // Центр вращения пушки с учётом смещения
-            g.TranslateTransform(GUN_LOCATION_X + originalImage.Width / 2,
-                                 GUN_LOCATION_Y + originalImage.Height / 2);
-
-            // Поворот пушки на текущий угол
-            g.RotateTransform(currentAngle);
-
-            // Перемещение обратно, чтобы нарисовать пушку
-            g.TranslateTransform(-originalImage.Width / 2, -originalImage.Height / 2);
-
-            // Рисуем саму пушку
-            g.DrawImage(originalImage, 0, 0, originalImage.Width, originalImage.Height);
-
-            // Восстанавливаем старую трансформацию
-            g.Transform = oldTransform;
-        }
-
-        private void UpdateProjectilePosition(object? sender, EventArgs e)
-        {
-            // Переводим угол в радианы
-            float angleRad = projectileAngle * (float)Math.PI / 180;
-
-            // Вычисляем движение снаряда с учетом угла
-            // Учитываем инвертированную ось Y (в Windows Forms ось Y направлена вниз)
-            projectilePosition.X += (float)Math.Cos(angleRad) * PROJECTILE_SPEED; // Движение по оси X
-            projectilePosition.Y -= (float)Math.Sin(angleRad) * PROJECTILE_SPEED; // Движение по оси Y
-
-            // Проверка на столкновение с кораблем или выход за границы
-            if (CheckCollisionWithShip() || CheckCollisionWithBounds())
+            foreach (var shipCoordinates in shipsCoordinates)
             {
-                projectileInFlight = false; // Останавливаем движение снаряда
-                timer.Stop(); // Останавливаем таймер
+                sections.Add(GetShipSections(shipCoordinates));
             }
 
-            // Перерисовываем форму для обновления положения снаряда
-            Invalidate();
-        }
-
-        private bool CheckCollisionWithBounds()
-        {
-            return projectilePosition.X < TABLE_LOCATION_X ||
-                   projectilePosition.X > TABLE_LOCATION_X + TABLE_COLS_AMOUNT * TABLE_CELL_SIZE ||
-                   projectilePosition.Y < TABLE_LOCATION_Y;
+            return sections;
         }
 
         private bool CheckCollisionWithShip()
         {
-            foreach (var ship in shipsPositions)
+            for (int i = 0; i < shipsSections.Count; i++)
             {
-                if (projectilePosition.X + PROJECTILE_SIZE / 2 >= ship.LeftTop.X &&
-                    projectilePosition.X - PROJECTILE_SIZE / 2 <= ship.RightBottom.X &&
-                    projectilePosition.Y + PROJECTILE_SIZE / 2 >= ship.LeftTop.Y &&
-                    projectilePosition.Y - PROJECTILE_SIZE / 2 <= ship.RightBottom.Y)
+                
+
+                for (int j = 0; j < shipsSections[i].Length; j++)
                 {
-                    RemoveShip(ship);
-                    return true;
+                    ShipSection shipSection = shipsSections[i][j];
+
+                    if (projectilePosition.X + PROJECTILE_SIZE / 2 >= shipSection.Position.X &&
+                        projectilePosition.X - PROJECTILE_SIZE / 2 <= shipSection.Position.X + TABLE_CELL_SIZE &&
+                        projectilePosition.Y + PROJECTILE_SIZE / 2 >= shipSection.Position.Y &&
+                        projectilePosition.Y - PROJECTILE_SIZE / 2 <= shipSection.Position.Y + TABLE_CELL_SIZE)
+                    {
+                        shipsSections[i][j].IsDestroyed = true;
+
+                        RemoveShip(shipsSections[i]);
+
+                        return true;
+                    }
                 }
             }
             return false;
         }
 
-        private void RemoveShip(ShipPosition ship)
+        private void RemoveShip(ShipSection[] shipSections)
         {
-            shipsPositions = shipsPositions.Where(s => !s.Equals(ship)).ToArray();
+            // Удаляем корабль, если все его секции уничтожены
+            if (shipSections.All(section => section.IsDestroyed))
+            {
+                this.shipsSections.Remove(shipSections); // Удаляем корабль из списка
+            }
+        }
+
+        private void ShootProjectile()
+        {
+            float angleRad = (180 - currentAngle) * (float)Math.PI / 180;
+            float centerX = GUN_LOCATION_X + originalImage.Width / 2;
+            float centerY = GUN_LOCATION_Y + originalImage.Height / 2;
+            float barrelLength = originalImage.Height / 2;
+
+            float gunTipX = centerX + (float)Math.Cos(angleRad) * barrelLength;
+            float gunTipY = centerY - (float)Math.Sin(angleRad) * barrelLength;
+
+            projectileAngle = 180 - currentAngle;
+            projectilePosition = new PointF(gunTipX, gunTipY);
+            projectileInFlight = true;
+            timer.Start();
+        }
+
+        private void DrawGun(Graphics g)
+        {
+            Matrix oldTransform = g.Transform;
+            g.TranslateTransform(GUN_LOCATION_X + originalImage.Width / 2, GUN_LOCATION_Y + originalImage.Height / 2);
+            g.RotateTransform(currentAngle);
+            g.TranslateTransform(-originalImage.Width / 2, -originalImage.Height / 2);
+            g.DrawImage(originalImage, 0, 0, originalImage.Width, originalImage.Height);
+            g.Transform = oldTransform;
+        }
+
+        private void UpdateProjectilePosition(object? sender, EventArgs e)
+        {
+            float angleRad = projectileAngle * (float)Math.PI / 180;
+            projectilePosition.X += (float)Math.Cos(angleRad) * PROJECTILE_SPEED;
+            projectilePosition.Y -= (float)Math.Sin(angleRad) * PROJECTILE_SPEED;
+
+            if (CheckCollisionWithShip() || CheckCollisionWithBounds())
+            {
+                projectileInFlight = false;
+                timer.Stop();
+            }
+
+            Invalidate();
+        }
+
+        private bool CheckCollisionWithBounds()
+        {
+            return projectilePosition.X < TABLE_LOCATION_X || projectilePosition.X > TABLE_LOCATION_X + TABLE_COLS_AMOUNT * TABLE_CELL_SIZE ||
+                   projectilePosition.Y < TABLE_LOCATION_Y;
         }
 
         private void DrawGame(object? sender, PaintEventArgs e)
@@ -189,6 +177,7 @@ namespace UART_SeaBattle
             DrawTable(g);
             DrawShips(g);
             DrawGun(g);
+
             if (projectileInFlight)
             {
                 DrawProjectile(g);
@@ -206,7 +195,6 @@ namespace UART_SeaBattle
                     {
                         int x = TABLE_LOCATION_X + col * TABLE_CELL_SIZE;
                         int y = TABLE_LOCATION_Y + row * TABLE_CELL_SIZE;
-
                         g.FillRectangle(cellBrush, x, y, TABLE_CELL_SIZE, TABLE_CELL_SIZE);
                         g.DrawRectangle(linePen, x, y, TABLE_CELL_SIZE, TABLE_CELL_SIZE);
                     }
@@ -217,13 +205,17 @@ namespace UART_SeaBattle
         private void DrawShips(Graphics g)
         {
             using (Brush shipBrush = new SolidBrush(SHIP_COLOR))
+            using (Brush destroyedBrush = new SolidBrush(PROJECTILE_COLOR))
             {
-                foreach (var ship in shipsPositions)
+                foreach (var shipSections in shipsSections)
                 {
-                    g.FillRectangle(shipBrush,
-                        (float)ship.LeftTop.X, (float)ship.LeftTop.Y,
-                        (float)(ship.RightBottom.X - ship.LeftTop.X),
-                        (float)(ship.RightBottom.Y - ship.LeftTop.Y));
+                    foreach (var section in shipSections)
+                    {
+                        Brush currentBrush = section.IsDestroyed ? destroyedBrush : shipBrush;
+                        g.FillRectangle(currentBrush,
+                            (float) section.Position.X, (float) section.Position.Y,
+                            TABLE_CELL_SIZE, TABLE_CELL_SIZE);
+                    }
                 }
             }
         }
@@ -257,18 +249,22 @@ namespace UART_SeaBattle
             Invalidate(); // Перерисовка
         }
 
-        private ShipPosition CalculateShipPosition(ShipCoordinates coordinates)
+        private ShipSection[] GetShipSections(ShipCoordinates coordinates)
         {
-            int left = TABLE_LOCATION_X + coordinates.FirstSection.X * TABLE_CELL_SIZE;
-            int top = TABLE_LOCATION_Y + coordinates.FirstSection.Y * TABLE_CELL_SIZE;
-            int right = TABLE_LOCATION_X + (coordinates.LastSection.X + 1) * TABLE_CELL_SIZE;
-            int bottom = TABLE_LOCATION_Y + (coordinates.LastSection.Y + 1) * TABLE_CELL_SIZE;
+            var sections = new List<ShipSection>();
 
-            return new ShipPosition(
-                new XYPosition(left, top),
-                new XYPosition(left, bottom),
-                new XYPosition(right, top),
-                new XYPosition(right, bottom));
+            for (int x = coordinates.FirstSection.X; x <= coordinates.LastSection.X; x++)
+            {
+                for (int y = coordinates.FirstSection.Y; y <= coordinates.LastSection.Y; y++)
+                {
+                    sections.Add(new ShipSection(new XYPosition(
+                        TABLE_LOCATION_X + x * TABLE_CELL_SIZE,
+                        TABLE_LOCATION_Y + y * TABLE_CELL_SIZE
+                    )));
+                }
+            }
+
+            return sections.ToArray();
         }
     }
 }
