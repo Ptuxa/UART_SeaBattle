@@ -1,0 +1,17 @@
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\bin\Debug\net8.0-windows\UART_SeaBattle.exe
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\bin\Debug\net8.0-windows\UART_SeaBattle.deps.json
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\bin\Debug\net8.0-windows\UART_SeaBattle.runtimeconfig.json
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\bin\Debug\net8.0-windows\UART_SeaBattle.dll
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\bin\Debug\net8.0-windows\UART_SeaBattle.pdb
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.FormBattleField.resources
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.csproj.GenerateResource.cache
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.GeneratedMSBuildEditorConfig.editorconfig
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.AssemblyInfoInputs.cache
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.AssemblyInfo.cs
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.csproj.CoreCompileInputs.cache
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.dll
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\refint\UART_SeaBattle.dll
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.pdb
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.genruntimeconfig.cache
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\ref\UART_SeaBattle.dll
+D:\Documents\POVS\Lab4\UART_SeaBattle\UART_SeaBattle\obj\Debug\net8.0-windows\UART_SeaBattle.Properties.Resources.resources
