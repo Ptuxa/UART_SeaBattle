@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
+using UART_SeaBattle.HandlerClasses;
 using UART_SeaBattle.Structs;
 
 namespace UART_SeaBattle
@@ -56,6 +57,36 @@ namespace UART_SeaBattle
         private bool projectileInFlight = false;
         private float currentAngle = 90f; // Начальная ориентация вверх
         private List<ShipSection[]> shipsSections; // Используем список секций
+        private SerialPortHandler serialHandler;
+
+        private SerialPortHandler InitializeSerialHandler()
+        {
+            SerialPortHandler serialHandler = new SerialPortHandler("COM3", 115200); // Укажите правильный порт
+            serialHandler.OnCommandReceived = HandleCommand;
+
+            return serialHandler;
+        }
+
+        private void HandleCommand(byte[] bytes)
+        {
+            if (bytes.Length == 3 && bytes[0] == 0xAA && bytes[1] == 0xBB)
+            {                
+                switch (bytes[2])
+                {
+                    case 0x1:
+                        currentAngle -= ANGLE_ROTATION;
+                        break;
+                    case 0x2:
+                        currentAngle += ANGLE_ROTATION;
+                        break;
+                    case 0x3:
+                        if (!projectileInFlight) ShootProjectile();
+                        break;
+                }
+
+                Invalidate(); // Перерисовка
+            }            
+        }
 
         public FormBattleField()
         {
@@ -73,6 +104,8 @@ namespace UART_SeaBattle
 
             this.ClientSize = new Size(TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
                                        TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200);
+
+            serialHandler = InitializeSerialHandler();
         }
 
         private List<ShipSection[]> InitializeShips()
