@@ -9,11 +9,13 @@ namespace UART_SeaBattle.Structs
     public struct ShipSection
     {
         public XYPosition Position;
+        public int ShipIndex;
         public bool IsDestroyed;
 
-        public ShipSection(XYPosition position)
+        public ShipSection(XYPosition position, int shipIndex)
         {
             Position = position;
+            ShipIndex = shipIndex;
             IsDestroyed = false;
         }
     }
