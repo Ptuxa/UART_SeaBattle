@@ -57,6 +57,7 @@ namespace UART_SeaBattle
         private bool projectileInFlight = false;
         private float currentAngle = 90f; // ��������� ���������� �����
         private List<ShipSection[]> shipsSections; // ���������� ������ ������
+        private int[] shipsInfo;
 
         public FormBattleField()
         {
@@ -70,7 +71,8 @@ namespace UART_SeaBattle
             timer.Interval = 30; // ������ ��� �������� �������
             timer.Tick += UpdateProjectilePosition;
 
-            shipsSections = InitializeShips(); // �������������� ������� � �� ������
+            shipsSections = InitializeShipsSections(); // �������������� ������� � �� ������
+            shipsInfo = InitializeShipsInfo();
 
             this.ClientSize = new Size(TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
                                        TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200);
@@ -79,24 +81,34 @@ namespace UART_SeaBattle
 
 		}
 
-		private List<ShipSection[]> InitializeShips()
+		private List<ShipSection[]> InitializeShipsSections()
         {
             var sections = new List<ShipSection[]>();
 
-            foreach (var shipCoordinates in shipsCoordinates)
+            for (int i = 0; i < shipsCoordinates.Length; i++)
             {
-                sections.Add(GetShipSections(shipCoordinates));
+                sections.Add(GetShipSections(shipsCoordinates[i], i));
             }
 
             return sections;
         }
 
+        private int[] InitializeShipsInfo()
+        {
+            int[] shipsInfo = new int[shipsCoordinates.Length];
+
+            for (int i = 0; i < shipsInfo.Length; i++)
+            {
+                shipsInfo[i] = 0;
+            }
+
+            return shipsInfo;
+        }
+
         private bool CheckCollisionWithShip()
         {
             for (int i = 0; i < shipsSections.Count; i++)
-            {
-                
-
+            {               
                 for (int j = 0; j < shipsSections[i].Length; j++)
                 {
                     ShipSection shipSection = shipsSections[i][j];
@@ -122,9 +134,9 @@ namespace UART_SeaBattle
             // ������� �������, ���� ��� ��� ������ ����������
             if (shipSections.All(section => section.IsDestroyed))
             {
-                this.shipsSections.Remove(shipSections); // ������� ������� �� ������
-				string result = $"DESTROYED_SHIP_SIZE={1}";
+                string result = $"DESTROYED_SHIP_SIZE={shipSections.Length}";
                 SerialIO.SendData(result);
+                this.shipsSections.Remove(shipSections); // ������� ������� �� ������			                
 			}
         }
 
@@ -255,7 +267,7 @@ namespace UART_SeaBattle
             Invalidate(); // �����������
         }
 
-        private ShipSection[] GetShipSections(ShipCoordinates coordinates)
+        private ShipSection[] GetShipSections(ShipCoordinates coordinates, int shipIndex)
         {
             var sections = new List<ShipSection>();
 
@@ -266,7 +278,7 @@ namespace UART_SeaBattle
                     sections.Add(new ShipSection(new XYPosition(
                         TABLE_LOCATION_X + x * TABLE_CELL_SIZE,
                         TABLE_LOCATION_Y + y * TABLE_CELL_SIZE
-                    )));
+                    ), shipIndex));
                 }
             }
 
