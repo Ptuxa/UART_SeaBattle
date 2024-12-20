@@ -1,22 +1,22 @@
+using StmReader;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
-using UART_SeaBattle.HandlerClasses;
 using UART_SeaBattle.Structs;
 
 namespace UART_SeaBattle
 {
     public partial class FormBattleField : Form
     {
-        private const float ANGLE_ROTATION = 10f; // Шаг поворота
+        private const float ANGLE_ROTATION = 10f; // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         private const int TABLE_LINE_THICKNESS = 1;
         private const int TABLE_LOCATION_X = 2;
         private const int TABLE_LOCATION_Y = 50;
-        private const int TABLE_ROWS_AMOUNT = 7; // Количество строк таблицы
-        private const int TABLE_COLS_AMOUNT = 10; // Количество колонок таблицы
-        private const int TABLE_CELL_SIZE = 50; // Размер клетки    
+        private const int TABLE_ROWS_AMOUNT = 7; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        private const int TABLE_COLS_AMOUNT = 10; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        private const int TABLE_CELL_SIZE = 50; // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ    
         private const int GUN_LOCATION_X = 225;
         private const int GUN_LOCATION_Y = 430;
         private const int PROJECTILE_SIZE = 5;
@@ -55,60 +55,31 @@ namespace UART_SeaBattle
         private PointF projectilePosition;
         private float projectileAngle = 0;
         private bool projectileInFlight = false;
-        private float currentAngle = 90f; // Начальная ориентация вверх
-        private List<ShipSection[]> shipsSections; // Используем список секций
-        private SerialPortHandler serialHandler;
-
-        private SerialPortHandler InitializeSerialHandler()
-        {
-            SerialPortHandler serialHandler = new SerialPortHandler("COM3", 115200); // Укажите правильный порт
-            serialHandler.OnCommandReceived = HandleCommand;
-
-            return serialHandler;
-        }
-
-        private void HandleCommand(byte[] bytes)
-        {
-            if (bytes.Length == 3 && bytes[0] == 0xAA && bytes[1] == 0xBB)
-            {                
-                switch (bytes[2])
-                {
-                    case 0x1:
-                        currentAngle -= ANGLE_ROTATION;
-                        break;
-                    case 0x2:
-                        currentAngle += ANGLE_ROTATION;
-                        break;
-                    case 0x3:
-                        if (!projectileInFlight) ShootProjectile();
-                        break;
-                }
-
-                Invalidate(); // Перерисовка
-            }            
-        }
+        private float currentAngle = 90f; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+        private List<ShipSection[]> shipsSections; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
         public FormBattleField()
         {
             InitializeComponent();
-            this.DoubleBuffered = true; // Устранение мерцания
-            this.KeyPreview = true; // Для обработки клавиш
+            this.DoubleBuffered = true; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+            this.KeyPreview = true; // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
             this.Paint += DrawGame;
             this.KeyDown += HandleKeyPress;
 
-            timer.Interval = 30; // Таймер для движения снаряда
+            timer.Interval = 30; // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             timer.Tick += UpdateProjectilePosition;
 
-            shipsSections = InitializeShips(); // Инициализируем корабли и их секции
+            shipsSections = InitializeShips(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
             this.ClientSize = new Size(TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
                                        TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200);
 
-            serialHandler = InitializeSerialHandler();
-        }
+			Task.Run(() => SerialIO.Start());
 
-        private List<ShipSection[]> InitializeShips()
+		}
+
+		private List<ShipSection[]> InitializeShips()
         {
             var sections = new List<ShipSection[]>();
 
@@ -148,11 +119,13 @@ namespace UART_SeaBattle
 
         private void RemoveShip(ShipSection[] shipSections)
         {
-            // Удаляем корабль, если все его секции уничтожены
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             if (shipSections.All(section => section.IsDestroyed))
             {
-                this.shipsSections.Remove(shipSections); // Удаляем корабль из списка
-            }
+                this.shipsSections.Remove(shipSections); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+				string result = $"DESTROYED_SHIP_SIZE={1}";
+                SerialIO.SendData(result);
+			}
         }
 
         private void ShootProjectile()
@@ -279,7 +252,7 @@ namespace UART_SeaBattle
                 ShootProjectile();
             }
 
-            Invalidate(); // Перерисовка
+            Invalidate(); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         }
 
         private ShipSection[] GetShipSections(ShipCoordinates coordinates)
