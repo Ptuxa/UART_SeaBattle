@@ -9,7 +9,7 @@ namespace UART_SeaBattle.Service
 {
     public class ShipsGenerator
     {
-        private const int NUMBER_OF_SHIPS = 30; // Количество кораблей
+        private const int NUMBER_OF_SHIPS = 10; // Количество кораблей
         private const int MIN_SHIP_LENGTH = 1; // Минимальная длина корабля
         private const int MAX_SHIP_LENGTH = 4; // Максимальная длина корабля
 

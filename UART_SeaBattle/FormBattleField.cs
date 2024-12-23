@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Linq;
 using System.Windows.Forms;
 using UART_SeaBattle.Service;
@@ -27,7 +28,7 @@ namespace UART_SeaBattle
         private readonly Color TABLE_LINE_COLOR = Color.Black;
         private readonly Color PROJECTILE_COLOR = Color.Red;
         private readonly Color SHIP_COLOR = Color.Green;
-        private readonly Image originalImage = Image.FromFile("..\\..\\..\\Properties\\Gun.png");
+        private readonly Image originalImage;
 
         private ShipCoordinates[] shipsCoordinates = new ShipCoordinates[]
         {
@@ -60,9 +61,21 @@ namespace UART_SeaBattle
         private float currentAngle = 90f; // Начальная ориентация вверх
         private List<ShipSection[]> shipsSections; // Используем список секций
 
+        //private readonly float colsMyltiplyCellSize = 3;
+        private readonly float sectionRightBorderTableX;
+        private readonly float projectileRadius;
+        private readonly float originalImageHeightCenter;
+        private readonly float originalImageWidthCenter;
+        private readonly float gunCenterX;
+        private readonly float gunCenterY;
+        private readonly float borderCollisionTableRight;
+
         public FormBattleField()
         {
             InitializeComponent();
+
+            originalImage = Image.FromFile("..\\..\\..\\Properties\\Gun.png");
+
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(0, 0);
             ShipsGenerator shipsGenerator = new ShipsGenerator(TABLE_COLS_AMOUNT, TABLE_ROWS_AMOUNT);            
@@ -90,7 +103,17 @@ namespace UART_SeaBattle
                 TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
                 //TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200
                 gunLocationY + TABLE_LOCATION_Y + originalImage.Height / 2
-            );     
+            );
+
+            
+
+            sectionRightBorderTableX = TABLE_LOCATION_X + TABLE_CELL_SIZE * (TABLE_COLS_AMOUNT - 1);
+            projectileRadius = PROJECTILE_SIZE / 2;
+            originalImageHeightCenter = originalImage.Height / 2;
+            originalImageWidthCenter = originalImage.Width / 2;
+            gunCenterX = gunLocationX + originalImageWidthCenter;
+            gunCenterY = gunLocationY + originalImageHeightCenter;
+            borderCollisionTableRight = TABLE_LOCATION_X + TABLE_COLS_AMOUNT * TABLE_CELL_SIZE;
         }
 
         private void UpdateShipPositions(object? sender, EventArgs e)
@@ -102,7 +125,7 @@ namespace UART_SeaBattle
                     shipsSections[i][j].Move(); // Перемещаем секцию
 
                     // Если секция выходит за правую границу, сбрасываем её в начало строки
-                    if (shipsSections[i][j].Position.X == TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT)
+                    if (shipsSections[i][j].Position.X > sectionRightBorderTableX)
                     {
                         shipsSections[i][j].Position.X = TABLE_LOCATION_X;
                     }
@@ -132,10 +155,10 @@ namespace UART_SeaBattle
                 {
                     ShipSection shipSection = shipsSections[i][j];
 
-                    if (projectilePosition.X + PROJECTILE_SIZE / 2 >= shipSection.Position.X &&
-                        projectilePosition.X - PROJECTILE_SIZE / 2 <= shipSection.Position.X + TABLE_CELL_SIZE &&
-                        projectilePosition.Y + PROJECTILE_SIZE / 2 >= shipSection.Position.Y &&
-                        projectilePosition.Y - PROJECTILE_SIZE / 2 <= shipSection.Position.Y + TABLE_CELL_SIZE)
+                    if (projectilePosition.X + projectileRadius >= shipSection.Position.X &&
+                        projectilePosition.X - projectileRadius <= shipSection.Position.X + TABLE_CELL_SIZE &&
+                        projectilePosition.Y + projectileRadius >= shipSection.Position.Y &&
+                        projectilePosition.Y - projectileRadius <= shipSection.Position.Y + TABLE_CELL_SIZE)
                     {
                         shipsSections[i][j].IsDestroyed = true;
 
@@ -160,12 +183,11 @@ namespace UART_SeaBattle
         private void ShootProjectile()
         {
             float angleRad = (180 - currentAngle) * (float)Math.PI / 180;
-            float centerX = gunLocationX + originalImage.Width / 2;
-            float centerY = gunLocationY + originalImage.Height / 2;
-            float barrelLength = originalImage.Height / 2;
+            float centerX = gunLocationX + originalImageWidthCenter;
+            float centerY = gunLocationY + originalImageHeightCenter;
 
-            float gunTipX = centerX + (float)Math.Cos(angleRad) * barrelLength;
-            float gunTipY = centerY - (float)Math.Sin(angleRad) * barrelLength;
+            float gunTipX = centerX + (float)Math.Cos(angleRad) * originalImageHeightCenter;
+            float gunTipY = centerY - (float)Math.Sin(angleRad) * originalImageHeightCenter;
 
             projectileAngle = 180 - currentAngle;
             projectilePosition = new PointF(gunTipX, gunTipY);
@@ -176,9 +198,9 @@ namespace UART_SeaBattle
         private void DrawGun(Graphics g)
         {
             Matrix oldTransform = g.Transform;
-            g.TranslateTransform(gunLocationX + originalImage.Width / 2, gunLocationY + originalImage.Height / 2);
+            g.TranslateTransform(gunCenterX, gunCenterY);
             g.RotateTransform(currentAngle);
-            g.TranslateTransform(-originalImage.Width / 2, -originalImage.Height / 2);
+            g.TranslateTransform(-originalImageWidthCenter, -originalImageHeightCenter);
             g.DrawImage(originalImage, 0, 0, originalImage.Width, originalImage.Height);
             g.Transform = oldTransform;
         }
@@ -200,7 +222,7 @@ namespace UART_SeaBattle
 
         private bool CheckCollisionWithBoundsTable()
         {
-            return projectilePosition.X < TABLE_LOCATION_X || projectilePosition.X > TABLE_LOCATION_X + TABLE_COLS_AMOUNT * TABLE_CELL_SIZE ||
+            return projectilePosition.X < TABLE_LOCATION_X || projectilePosition.X > borderCollisionTableRight ||
                    projectilePosition.Y < TABLE_LOCATION_Y;
         }
 
@@ -266,8 +288,8 @@ namespace UART_SeaBattle
             using (Brush projectileBrush = new SolidBrush(PROJECTILE_COLOR))
             {
                 g.FillEllipse(projectileBrush,
-                    projectilePosition.X - PROJECTILE_SIZE / 2,
-                    projectilePosition.Y - PROJECTILE_SIZE / 2,
+                    projectilePosition.X - projectileRadius,
+                    projectilePosition.Y - projectileRadius,
                     PROJECTILE_SIZE, PROJECTILE_SIZE);
             }
         }
