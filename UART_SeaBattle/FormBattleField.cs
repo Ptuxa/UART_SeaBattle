@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
+using UART_SeaBattle.Service;
 using UART_SeaBattle.Structs;
 
 namespace UART_SeaBattle
@@ -13,14 +14,15 @@ namespace UART_SeaBattle
         private const int TABLE_LINE_THICKNESS = 1;
         private const int TABLE_LOCATION_X = 2;
         private const int TABLE_LOCATION_Y = 50;
-        private const int TABLE_ROWS_AMOUNT = 7; // Количество строк таблицы
-        private const int TABLE_COLS_AMOUNT = 10; // Количество колонок таблицы
+        private const int TABLE_ROWS_AMOUNT = 17; // Количество строк таблицы
+        private const int TABLE_COLS_AMOUNT = 38; // Количество колонок таблицы
         private const int TABLE_CELL_SIZE = 50; // Размер клетки    
-        private const int GUN_LOCATION_X = 225;
-        private const int GUN_LOCATION_Y = 430;
+            
         private const int PROJECTILE_SIZE = 5;
         private const float PROJECTILE_SPEED = 10f;
 
+        private readonly int gunLocationX = 225;
+        private readonly int gunLocationY = 430;
         private readonly Color TABLE_CELL_COLOR = Color.LightBlue;
         private readonly Color TABLE_LINE_COLOR = Color.Black;
         private readonly Color PROJECTILE_COLOR = Color.Red;
@@ -34,21 +36,21 @@ namespace UART_SeaBattle
             new ShipCoordinates { FirstSection = new Point(0, 6), LastSection = new Point(0, 6) }
         };
 
-        struct ShipPosition
-        {
-            public XYPosition LeftTop;
-            public XYPosition LeftBottom;
-            public XYPosition RightTop;
-            public XYPosition RightBottom;
+        //struct ShipPosition
+        //{
+        //    public XYPosition LeftTop;
+        //    public XYPosition LeftBottom;
+        //    public XYPosition RightTop;
+        //    public XYPosition RightBottom;
 
-            public ShipPosition(XYPosition leftTop, XYPosition leftBottom, XYPosition rightTop, XYPosition rightBottom)
-            {
-                LeftTop = leftTop;
-                LeftBottom = leftBottom;
-                RightTop = rightTop;
-                RightBottom = rightBottom;
-            }
-        }
+        //    public ShipPosition(XYPosition leftTop, XYPosition leftBottom, XYPosition rightTop, XYPosition rightBottom)
+        //    {
+        //        LeftTop = leftTop;
+        //        LeftBottom = leftBottom;
+        //        RightTop = rightTop;
+        //        RightBottom = rightBottom;
+        //    }
+        //}
 
         private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         private System.Windows.Forms.Timer shipMovementTimer = new System.Windows.Forms.Timer();
@@ -61,6 +63,10 @@ namespace UART_SeaBattle
         public FormBattleField()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.Manual;
+            this.Location = new Point(0, 0);
+            ShipsGenerator shipsGenerator = new ShipsGenerator(TABLE_COLS_AMOUNT, TABLE_ROWS_AMOUNT);            
+
             this.DoubleBuffered = true;
             this.KeyPreview = true;
 
@@ -70,16 +76,21 @@ namespace UART_SeaBattle
             timer.Interval = 30;
             timer.Tick += UpdateProjectilePosition;
 
-            shipMovementTimer.Interval = 200; // Интервал обновления позиций кораблей
+            shipMovementTimer.Interval = 500; // Интервал обновления позиций кораблей
             shipMovementTimer.Tick += UpdateShipPositions;
             shipMovementTimer.Start(); // Запуск таймера движения кораблей
 
+            shipsCoordinates = shipsGenerator.GenerateShips();
             shipsSections = InitializeShips();
+
+            gunLocationX = TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT / 2 + TABLE_LINE_THICKNESS - originalImage.Width / 2;
+            gunLocationY = TABLE_LOCATION_Y + TABLE_CELL_SIZE * (TABLE_ROWS_AMOUNT + 1) + TABLE_LINE_THICKNESS - originalImage.Height / 2;
 
             this.ClientSize = new Size(
                 TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
-                TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200
-            );
+                //TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200
+                gunLocationY + TABLE_LOCATION_Y + originalImage.Height / 2
+            );     
         }
 
         private void UpdateShipPositions(object? sender, EventArgs e)
@@ -91,7 +102,7 @@ namespace UART_SeaBattle
                     shipsSections[i][j].Move(); // Перемещаем секцию
 
                     // Если секция выходит за правую границу, сбрасываем её в начало строки
-                    if (shipsSections[i][j].Position.X > TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT)
+                    if (shipsSections[i][j].Position.X == TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT)
                     {
                         shipsSections[i][j].Position.X = TABLE_LOCATION_X;
                     }
@@ -149,8 +160,8 @@ namespace UART_SeaBattle
         private void ShootProjectile()
         {
             float angleRad = (180 - currentAngle) * (float)Math.PI / 180;
-            float centerX = GUN_LOCATION_X + originalImage.Width / 2;
-            float centerY = GUN_LOCATION_Y + originalImage.Height / 2;
+            float centerX = gunLocationX + originalImage.Width / 2;
+            float centerY = gunLocationY + originalImage.Height / 2;
             float barrelLength = originalImage.Height / 2;
 
             float gunTipX = centerX + (float)Math.Cos(angleRad) * barrelLength;
@@ -165,7 +176,7 @@ namespace UART_SeaBattle
         private void DrawGun(Graphics g)
         {
             Matrix oldTransform = g.Transform;
-            g.TranslateTransform(GUN_LOCATION_X + originalImage.Width / 2, GUN_LOCATION_Y + originalImage.Height / 2);
+            g.TranslateTransform(gunLocationX + originalImage.Width / 2, gunLocationY + originalImage.Height / 2);
             g.RotateTransform(currentAngle);
             g.TranslateTransform(-originalImage.Width / 2, -originalImage.Height / 2);
             g.DrawImage(originalImage, 0, 0, originalImage.Width, originalImage.Height);
