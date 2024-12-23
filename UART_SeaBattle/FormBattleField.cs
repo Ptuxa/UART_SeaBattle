@@ -51,6 +51,7 @@ namespace UART_SeaBattle
         }
 
         private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+        private System.Windows.Forms.Timer shipMovementTimer = new System.Windows.Forms.Timer();
         private PointF projectilePosition;
         private float projectileAngle = 0;
         private bool projectileInFlight = false;
@@ -60,19 +61,44 @@ namespace UART_SeaBattle
         public FormBattleField()
         {
             InitializeComponent();
-            this.DoubleBuffered = true; // Устранение мерцания
-            this.KeyPreview = true; // Для обработки клавиш
+            this.DoubleBuffered = true;
+            this.KeyPreview = true;
 
             this.Paint += DrawGame;
             this.KeyDown += HandleKeyPress;
 
-            timer.Interval = 30; // Таймер для движения снаряда
+            timer.Interval = 30;
             timer.Tick += UpdateProjectilePosition;
 
-            shipsSections = InitializeShips(); // Инициализируем корабли и их секции
+            shipMovementTimer.Interval = 200; // Интервал обновления позиций кораблей
+            shipMovementTimer.Tick += UpdateShipPositions;
+            shipMovementTimer.Start(); // Запуск таймера движения кораблей
 
-            this.ClientSize = new Size(TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
-                                       TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200);
+            shipsSections = InitializeShips();
+
+            this.ClientSize = new Size(
+                TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_X,
+                TABLE_LOCATION_Y + TABLE_CELL_SIZE * TABLE_ROWS_AMOUNT + TABLE_LINE_THICKNESS + TABLE_LOCATION_Y + 200
+            );
+        }
+
+        private void UpdateShipPositions(object? sender, EventArgs e)
+        {
+            for (int i = 0; i < shipsSections.Count; i++)
+            {
+                for (int j = 0; j < shipsSections[i].Length; j++)
+                {
+                    shipsSections[i][j].Move(); // Перемещаем секцию
+
+                    // Если секция выходит за правую границу, сбрасываем её в начало строки
+                    if (shipsSections[i][j].Position.X > TABLE_LOCATION_X + TABLE_CELL_SIZE * TABLE_COLS_AMOUNT)
+                    {
+                        shipsSections[i][j].Position.X = TABLE_LOCATION_X;
+                    }
+                }
+            }
+
+            Invalidate(); // Перерисовываем игровое поле
         }
 
         private List<ShipSection[]> InitializeShips()
@@ -264,7 +290,7 @@ namespace UART_SeaBattle
                     sections.Add(new ShipSection(new XYPosition(
                         TABLE_LOCATION_X + x * TABLE_CELL_SIZE,
                         TABLE_LOCATION_Y + y * TABLE_CELL_SIZE
-                    )));
+                    ), TABLE_CELL_SIZE));
                 }
             }
 
