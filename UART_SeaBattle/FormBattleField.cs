@@ -90,9 +90,7 @@ namespace UART_SeaBattle
         private bool CheckCollisionWithShip()
         {
             for (int i = 0; i < shipsSections.Count; i++)
-            {
-                
-
+            {                
                 for (int j = 0; j < shipsSections[i].Length; j++)
                 {
                     ShipSection shipSection = shipsSections[i][j];
@@ -154,7 +152,7 @@ namespace UART_SeaBattle
             projectilePosition.X += (float)Math.Cos(angleRad) * PROJECTILE_SPEED;
             projectilePosition.Y -= (float)Math.Sin(angleRad) * PROJECTILE_SPEED;
 
-            if (CheckCollisionWithShip() || CheckCollisionWithBounds())
+            if (CheckCollisionWithShip() || CheckCollisionWithBoundsTable() || CheckCollisionBoundsForm())
             {
                 projectileInFlight = false;
                 timer.Stop();
@@ -163,10 +161,16 @@ namespace UART_SeaBattle
             Invalidate();
         }
 
-        private bool CheckCollisionWithBounds()
+        private bool CheckCollisionWithBoundsTable()
         {
             return projectilePosition.X < TABLE_LOCATION_X || projectilePosition.X > TABLE_LOCATION_X + TABLE_COLS_AMOUNT * TABLE_CELL_SIZE ||
                    projectilePosition.Y < TABLE_LOCATION_Y;
+        }
+
+        private bool CheckCollisionBoundsForm()
+        {
+            return projectilePosition.X < this.ClientRectangle.Left || projectilePosition.X > this.ClientRectangle.Right ||
+                projectilePosition.Y < this.ClientRectangle.Top || projectilePosition.Y > this.ClientRectangle.Bottom;
         }
 
         private void DrawGame(object? sender, PaintEventArgs e)
